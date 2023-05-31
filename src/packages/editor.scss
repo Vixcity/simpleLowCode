@@ -75,5 +75,33 @@
 
   &-block {
     position: absolute;
+    &::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+    &-focus {
+      &::after {
+        border: 3px dashed red;
+      }
+    }
   }
+}
+
+// 移动left值
+.line-x{
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 1px dashed red;
+}
+// 移动top值
+.line-y{
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px dashed red;
 }

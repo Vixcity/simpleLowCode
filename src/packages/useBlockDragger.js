@@ -1,9 +1,11 @@
 import { reactive } from "vue";
+import { events } from "./event";
 
 export function useBlockDragger(focusData, lastSelectblock, data) {
   let dragState = {
     startX: 0,
     startY: 0,
+    dragging: false, // 默认不是正在拖拽
   };
 
   let markline = reactive({
@@ -12,7 +14,6 @@ export function useBlockDragger(focusData, lastSelectblock, data) {
   });
 
   const mousedown = (e) => {
-    console.log(lastSelectblock.value);
     const { width: BWidth, height: BHeight } = lastSelectblock.value; // 最后拖拽的元素
     dragState = {
       startX: e.clientX,
@@ -20,6 +21,7 @@ export function useBlockDragger(focusData, lastSelectblock, data) {
       // B 点拖拽前位置的 left 和 top
       startLeft: lastSelectblock.value.left,
       startTop: lastSelectblock.value.top,
+      dragging: false,
       // 记录每一个选中的位置
       startPos: focusData.value.focus.map(({ top, left }) => ({
         top,
@@ -89,6 +91,11 @@ export function useBlockDragger(focusData, lastSelectblock, data) {
   const mousemove = (e) => {
     let { clientX: moveX, clientY: moveY } = e;
 
+    if (!dragState.dragging) {
+      dragState.dragging = true;
+      events.emit("start"); // 触发事件就会记住拖拽之前的位置
+    }
+
     // 计算当前元素最新的 left 和 top，去线里面找，找到显示线
     // 鼠标移动后 - 鼠标移动前 + left
     let left = moveX - dragState.startX + dragState.startLeft;
@@ -110,7 +117,6 @@ export function useBlockDragger(focusData, lastSelectblock, data) {
     }
     for (let i = 0; i < dragState.lines.x.length; i++) {
       const { left: l, showLeft: s } = dragState.lines.x[i]; // 取每一根线
-      console.log(l, left);
       if (Math.abs(l - left) < 5) {
         // 接近横线
         x = s; // 线要显示的位置
@@ -120,7 +126,6 @@ export function useBlockDragger(focusData, lastSelectblock, data) {
         break; // 找到一根线后就跳出循环
       }
     }
-    console.log(x);
     markline.x = x; // markline 是一个响应式数据，如果它更新了，视图就会更新
     markline.y = y;
 
@@ -136,8 +141,13 @@ export function useBlockDragger(focusData, lastSelectblock, data) {
   const mouseup = () => {
     document.removeEventListener("mousemove", mousemove);
     document.removeEventListener("mouseup", mouseup);
-    markline.x = null
-    markline.y = null
+    markline.x = null;
+    markline.y = null;
+    if (dragState.dragging) {
+      // 如果只是点击则不会触发
+      dragState.dragging = false;
+      events.emit("end"); // 触发事件就会记住拖拽之前的位置
+    }
   };
 
   return { mousedown, markline };

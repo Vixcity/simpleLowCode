@@ -5,6 +5,7 @@ import deepcopy from "deepcopy";
 import { useMenuDragger } from "./useMenuDragger";
 import { useFocus } from "./useFocus";
 import { useBlockDragger } from "./useBlockDragger";
+import { useCommand } from "./useCommand";
 
 export default defineComponent({
   name: "EditorContent",
@@ -41,13 +42,40 @@ export default defineComponent({
       useFocus(data, (e) => {
         mousedown(e);
       });
-    let { mousedown, markline } = useBlockDragger(focusData, lastSelectblock, data);
+    let { mousedown, markline } = useBlockDragger(
+      focusData,
+      lastSelectblock,
+      data
+    );
 
-    // 3. 实现拖拽多个元素的功能
+    const { commands } = useCommand(data);
+    const buttons = [
+      {
+        label: "撤销",
+        icon: "iconfont icon-chexiao",
+        handler: () => commands.undo(),
+      },
+      {
+        label: "重做",
+        icon: "iconfont icon-zhongzuo",
+        handler: () => commands.redo(),
+      },
+    ];
+
+    console.log(commands);
 
     return () => (
       <div class="editor">
-        <div class="editor-top">菜单栏</div>
+        <div class="editor-top">
+          {buttons.map((btn) => {
+            return (
+              <div class="editor-top-button" onClick={btn.handler}>
+                <i class={btn.icon}></i>
+                <span> {btn.label}</span>
+              </div>
+            );
+          })}
+        </div>
         {/* 左侧边栏，根据注册列表渲染对应的内容 可以实现H5的拖拽*/}
         <div class="editor-left">
           {config.componentList.map((component) => (

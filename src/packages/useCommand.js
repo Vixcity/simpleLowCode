@@ -2,7 +2,7 @@ import deepcopy from "deepcopy";
 import { events } from "./event";
 import { onUnmounted } from "vue";
 
-export function useCommand(data) {
+export function useCommand(data, focusData) {
   const state = {
     // 前进后退需要指针
     current: -1, // 前进后退的索引值
@@ -14,9 +14,9 @@ export function useCommand(data) {
 
   const registry = (command) => {
     state.commandArray.push(command);
-    state.commands[command.name] = () => {
+    state.commands[command.name] = (...args) => {
       // 命令名字对应执行函数
-      const { redo, undo } = command.execute();
+      const { redo, undo } = command.execute(...args);
       redo();
       if (!command.pushQueue) {
         // 不需要放到队列中直接逃过即可
@@ -105,6 +105,116 @@ export function useCommand(data) {
         undo() {
           // 前一步的
           data.value = { ...data.value, blocks: before };
+        },
+      };
+    },
+  });
+
+  registry({
+    // 更新整个容器
+    name: "updateContainer",
+    pushQueue: true,
+    execute(newVal) {
+      let stete = {
+        // 当前的值
+        before: data.value,
+        // 新值
+        after: newVal,
+      };
+      return {
+        redo: () => {
+          data.value = stete.after;
+        },
+        undo: () => {
+          data.value = stete.before;
+        },
+      };
+    },
+  });
+
+  registry({
+    // 置顶操作
+    name: "placeTop",
+    pushQueue: true,
+    execute() {
+      let before = deepcopy(data.value.blocks);
+      let after = (() => {
+        // 置顶就是在所有的block中找到最大的
+        let { focus, unfocus } = focusData.value;
+        let maxZIndex = unfocus.reduce((prev, block) => {
+          return Math.max(prev, block.zIndex);
+        }, -Infinity);
+
+        // 让当前选中的比最大的+1
+        focus.forEach((block) => (block.zIndex = maxZIndex + 1));
+        return data.value.blocks;
+      })();
+      return {
+        redo: () => {
+          data.value = { ...data.value, blocks: after };
+        },
+        undo: () => {
+          // 如果当前的blocks前后一致，则不会更新，所以在之前会深拷贝一份
+          data.value = { ...data.value, blocks: before };
+        },
+      };
+    },
+  });
+
+  registry({
+    // 置底操作
+    name: "placeBottom",
+    pushQueue: true,
+    execute() {
+      let before = deepcopy(data.value.blocks);
+      let after = (() => {
+        // 置底就是在所有的block中找到最小的
+        let { focus, unfocus } = focusData.value;
+        let minZIndex =
+          unfocus.reduce((prev, block) => {
+            return Math.min(prev, block.zIndex);
+          }, Infinity) - 1;
+
+        // 这里不能直接 - 1，因为index不能出现负数，否则就看不到了
+        if (minZIndex < 0) {
+          // 如果是负的，则让没选中的向上，自己变成0
+          const dur = Math.abs(minZIndex);
+          minZIndex = 0;
+          unfocus.forEach((block) => (block.zIndex += dur));
+        }
+
+        // 控制选中的值
+        focus.forEach((block) => (block.zIndex = minZIndex));
+        return data.value.blocks;
+      })();
+      return {
+        redo: () => {
+          data.value = { ...data.value, blocks: after };
+        },
+        undo: () => {
+          // 如果当前的blocks前后一致，则不会更新，所以在之前会深拷贝一份
+          data.value = { ...data.value, blocks: before };
+        },
+      };
+    },
+  });
+
+  registry({
+    // 删除
+    name: "delete",
+    pushQueue: true,
+    execute() {
+      let state = {
+        before: deepcopy(data.value.blocks),
+        // 选中的都删除了，留下的就是没选中的
+        after: focusData.value.unfocus,
+      };
+      return {
+        redo: () => {
+          data.value = { ...data.value, blocks: state.after };
+        },
+        undo: () => {
+          data.value = { ...data.value, blocks: state.before };
         },
       };
     },

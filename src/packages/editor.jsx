@@ -6,6 +6,7 @@ import { useMenuDragger } from "./useMenuDragger";
 import { useFocus } from "./useFocus";
 import { useBlockDragger } from "./useBlockDragger";
 import { useCommand } from "./useCommand";
+import { $dialog } from "@/components/Dialog";
 
 export default defineComponent({
   name: "EditorContent",
@@ -16,6 +17,9 @@ export default defineComponent({
   },
   emits: ["update:modelValue"], // 要触发的事件
   setup(props, ctx) {
+    // 预览的时候，内容不能再操作了，可以点击，输入内容，方便看效果
+    const previewRef = ref(false);
+
     const data = computed({
       get() {
         return props.modelValue;
@@ -38,17 +42,22 @@ export default defineComponent({
     // 1. 实现菜单拖拽功能
     const { dragstart, dragend } = useMenuDragger(data, containerRef);
     // 2. 获取焦点
-    let { blockMousedown, focusData, containerMousedown, lastSelectblock } =
-      useFocus(data, (e) => {
-        mousedown(e);
-      });
+    let {
+      blockMousedown,
+      focusData,
+      containerMousedown,
+      lastSelectblock,
+      clearBlockFocus,
+    } = useFocus(data, previewRef, (e) => {
+      mousedown(e);
+    });
     let { mousedown, markline } = useBlockDragger(
       focusData,
       lastSelectblock,
       data
     );
 
-    const { commands } = useCommand(data);
+    const { commands } = useCommand(data, focusData);
     const buttons = [
       {
         label: "撤销",
@@ -60,6 +69,58 @@ export default defineComponent({
         icon: "iconfont icon-zhongzuo",
         handler: () => commands.redo(),
       },
+      {
+        label: "导出",
+        icon: "iconfont icon-daochu",
+        handler: () => {
+          $dialog({
+            title: "导出JSON",
+            content: JSON.stringify(data.value),
+          });
+        },
+      },
+      {
+        label: "导入",
+        icon: "iconfont icon-daoru",
+        handler: () => {
+          $dialog({
+            title: "导入JSON",
+            content: "",
+            footer: true,
+            onConfirm(text) {
+              // 这样去更改无法保留历史记录
+              // data.value = JSON.parse(text)
+              commands.updateContainer(JSON.parse(text));
+            },
+          });
+        },
+      },
+      {
+        label: "置顶",
+        icon: "iconfont icon-zhiding",
+        handler: () => commands.placeTop(),
+      },
+      {
+        label: "置底",
+        icon: "iconfont icon-xiangxiazhidi",
+        handler: () => commands.placeBottom(),
+      },
+      {
+        label: "删除",
+        icon: "iconfont icon-shanchu",
+        handler: () => commands.delete(),
+      },
+      {
+        label: () => (previewRef.value ? "编辑" : "预览"),
+        icon: () =>
+          previewRef.value
+            ? "iconfont icon-wenbenshuru"
+            : "iconfont icon-yulan",
+        handler: () => {
+          previewRef.value = !previewRef.value;
+          clearBlockFocus();
+        },
+      },
     ];
 
     console.log(commands);
@@ -68,10 +129,13 @@ export default defineComponent({
       <div class="editor">
         <div class="editor-top">
           {buttons.map((btn) => {
+            const icon = typeof btn.icon === "function" ? btn.icon() : btn.icon;
+            const label =
+              typeof btn.label === "function" ? btn.label() : btn.label;
             return (
               <div class="editor-top-button" onClick={btn.handler}>
-                <i class={btn.icon}></i>
-                <span> {btn.label}</span>
+                <i class={icon}></i>
+                <span> {label}</span>
               </div>
             );
           })}
@@ -110,7 +174,7 @@ export default defineComponent({
               {/* 内容区 */}
               {data.value.blocks.map((block, index) => (
                 <EditBlock
-                  class={block.focus ? "editor-block-focus" : ""}
+                  class={previewRef.value ? "editor-block-preview" : block.focus ? "editor-block-focus" : ""}
                   block={block}
                   onMousedown={(e) => blockMousedown(e, block, index)}
                 ></EditBlock>

@@ -1,6 +1,6 @@
 import { computed, ref } from "vue";
 
-export function useFocus(data, callback) {
+export function useFocus(data, previewRef, callback) {
   let selectIndex = ref(-1); // 表示没有任何一个被选中
   // 最后选择的那一个
   let lastSelectblock = computed(() => data.value.blocks[selectIndex.value]);
@@ -21,6 +21,8 @@ export function useFocus(data, callback) {
   };
 
   const blockMousedown = (e, block, index) => {
+    console.log(previewRef.value);
+    if (previewRef.value) return;
     e.preventDefault();
     e.stopPropagation();
     //block 上我们需要定义一个属性 focus, 获取焦点以后需要把 focus 变成 true
@@ -43,6 +45,7 @@ export function useFocus(data, callback) {
   };
 
   const containerMousedown = () => {
+    if (previewRef.value) return;
     clearBlockFocus();
     selectIndex.value = -1;
   };
@@ -51,6 +54,7 @@ export function useFocus(data, callback) {
     blockMousedown,
     focusData,
     containerMousedown,
-    lastSelectblock
+    lastSelectblock,
+    clearBlockFocus,
   };
 }

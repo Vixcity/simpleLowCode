@@ -1,4 +1,4 @@
-@import url('//at.alicdn.com/t/c/font_4096813_b97sropti47.css');
+@import url("//at.alicdn.com/t/c/font_4096813_jl2esdclw2s.css");
 .editor {
   width: 100%;
   height: 100%;
@@ -58,20 +58,20 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    &-button{
-        width: 60px;
-        height: 60px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        background: rgba(0, 0, 0, 0.3);
-        user-select: none;
-        cursor: pointer;
-        color: #fff;
-        &+&{
-            margin-left: 3px;
-        }
+    &-button {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.3);
+      user-select: none;
+      cursor: pointer;
+      color: #fff;
+      & + & {
+        margin-left: 3px;
+      }
     }
   }
 
@@ -105,20 +105,25 @@
         border: 3px dashed red;
       }
     }
+    &-preview {
+      &::after {
+        display: none;
+      }
+    }
   }
 }
 
 // 移动left值
-.line-x{
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    border-left: 1px dashed red;
+.line-x {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px dashed red;
 }
 // 移动top值
-.line-y{
-    position: absolute;
-    left: 0;
-    right: 0;
-    border-top: 1px dashed red;
+.line-y {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed red;
 }

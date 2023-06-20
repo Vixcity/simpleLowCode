@@ -1,6 +1,7 @@
 import { computed, defineComponent, inject, ref } from "vue";
 import "./editor.scss";
 import EditBlock from "./editor-block";
+import EditorOperator from "./editor-operator";
 import deepcopy from "deepcopy";
 import { useMenuDragger } from "./useMenuDragger";
 import { useFocus } from "./useFocus";
@@ -154,7 +155,9 @@ export default defineComponent({
             </div>
           ))}
         </div>
-        <div class="editor-right">属性控制栏</div>
+        <div class="editor-right">
+          <EditorOperator block={lastSelectblock.value} data={data.value}></EditorOperator>
+        </div>
         <div class="editor-container">
           {/* 负责产生滚动条 */}
           <div class="editor-container-canvas">
